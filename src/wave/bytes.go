@@ -1,5 +1,7 @@
 package wave
 
+import "encoding/hex"
+
 // Int16ToBytes converts int16 to 2 byte array
 func Int16ToBytes(n int16, order ByteOrder) [2]byte {
 	if (order & RiffByteOrder) == RiffByteOrder {
@@ -30,4 +32,18 @@ func BytesToInt32(b [4]byte, order ByteOrder) int32 {
 		return int32(b[0]) | int32(b[1])<<8 | int32(b[2])<<16 | int32(b[3])<<24
 	}
 	return int32(b[0])<<24 | int32(b[1])<<16 | int32(b[2])<<8 | int32(b[3])
+}
+
+// ConvertBytesToHex is a wrapper to handle converting regular bytes to hex
+func ConvertBytesToHex(src []byte) []byte {
+	dst := make([]byte, hex.EncodedLen(len(src)))
+	hex.Encode(dst, src)
+	return dst
+}
+
+// ConvertHexToBytes is a wrapper to handle converting hex to regular bytes
+func ConvertHexToBytes(src []byte) ([]byte, error) {
+	dst := make([]byte, hex.DecodedLen(len(src)))
+	_, err := hex.Decode(dst, src)
+	return dst, err
 }

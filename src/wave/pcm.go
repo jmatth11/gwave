@@ -2,6 +2,7 @@ package wave
 
 import (
 	"bytes"
+	"math"
 	"os"
 )
 
@@ -144,7 +145,7 @@ func WritePCM(pcm *PCM, fileName string) error {
 	bHead := bytes.NewBuffer(header.HeaderType[:])
 	// fmt marker
 	bHead.Write(header.FmtMarker[:])
-	// format size
+	// format size.
 	write4Byte(bHead, byte4, Int32ToBytes(16, order))
 	// pcm type
 	write2Byte(bHead, byte2, Int16ToBytes(header.FmtType, order))
@@ -165,14 +166,10 @@ func WritePCM(pcm *PCM, fileName string) error {
 	write4Byte(bHead, byte4, Int32ToBytes(header.DataSize, order))
 	// get file size
 	fileSize := int32(bHead.Len()) + header.DataSize
+	beginData := bytes.NewBuffer(header.ByteType[:])
+	write4Byte(beginData, byte4, Int32ToBytes(fileSize, order))
 	// byte type
-	offset, err = writeOffset(f, header.ByteType[:], offset)
-	if err != nil {
-		return err
-	}
-	// file size
-	tmpData := Int32ToBytes(fileSize, order)
-	offset, err = writeOffset(f, tmpData[:], offset)
+	offset, err = writeOffset(f, beginData.Bytes(), offset)
 	if err != nil {
 		return err
 	}
@@ -199,4 +196,17 @@ func write4Byte(b *bytes.Buffer, placeholder []byte, data [4]byte) (int, error) 
 func write2Byte(b *bytes.Buffer, placeholder []byte, data [2]byte) (int, error) {
 	copy(placeholder, data[:])
 	return b.Write(placeholder)
+}
+
+// SimpleStereoSingleNote works for 16 bit sample note. same note for left and right side
+// Example Volume and Frequency could be 32000 and 440.0 respectively
+func (pcm *PCM) SimpleStereoSingleNote(vol int16, index int, freq, note float64) {
+	val := int16(float64(vol) * math.Sin((note*2.0*math.Pi)/freq))
+	order := pcm.Header.FileByteOrder()
+	data := Int16ToBytes(val, order)
+	// sample for 16 is 4 bytes
+	pcm.Data[index] = data[0]   // left
+	pcm.Data[index+1] = data[0] // right
+	pcm.Data[index+2] = data[1] // left
+	pcm.Data[index+3] = data[1] // right
 }

@@ -1,5 +1,7 @@
 package wave
 
+// currently not supporting Non-PCM and Extensible fmt types
+
 // Header is a simple layout of the format for a Wave file
 type Header struct {
 	// "RIFF"
