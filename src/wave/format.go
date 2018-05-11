@@ -54,7 +54,7 @@ var (
 	// Riff represents the Byte order type for the file in the header
 	Riff = [4]byte{'R', 'I', 'F', 'F'}
 	// DataMarker represents the DATA marker in the header.
-	DataMarker = [4]byte{'D', 'A', 'T', 'A'}
+	DataMarker = [4]byte{'d', 'a', 't', 'a'}
 )
 
 // FileByteOrder returns the byte order the file is

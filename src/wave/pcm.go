@@ -2,8 +2,9 @@ package wave
 
 import (
 	"bytes"
-	"math"
 	"os"
+
+	"./notes"
 )
 
 // PCM represents a PCM wave file
@@ -200,8 +201,8 @@ func write2Byte(b *bytes.Buffer, placeholder []byte, data [2]byte) (int, error) 
 
 // SimpleStereoSingleNote works for 16 bit sample note. same note for left and right side
 // Example Volume and Frequency could be 32000 and 440.0 respectively
-func (pcm *PCM) SimpleStereoSingleNote(vol int16, index int, freq, note float64) {
-	val := int16(float64(vol) * math.Sin((note*2.0*math.Pi)/freq))
+func (pcm *PCM) SimpleStereoSingleNote(vol int16, index int, freq, octave float64) {
+	val := int16(float64(vol) * notes.CreateNote(index, octave, float64(pcm.BytesPerSecond), freq))
 	order := pcm.Header.FileByteOrder()
 	data := Int16ToBytes(val, order)
 	// sample for 16 is 4 bytes
@@ -209,4 +210,10 @@ func (pcm *PCM) SimpleStereoSingleNote(vol int16, index int, freq, note float64)
 	pcm.Data[index+1] = data[0] // right
 	pcm.Data[index+2] = data[1] // left
 	pcm.Data[index+3] = data[1] // right
+}
+
+// AllocateDataSize sets up the PCM Data field to the size given.
+func (pcm *PCM) AllocateDataSize(size int32) {
+	pcm.DataSize = size
+	pcm.Data = make([]byte, size)
 }
