@@ -2,6 +2,8 @@ package wave
 
 import (
 	"bytes"
+	"encoding/binary"
+	//"encoding/binary"
 	"os"
 
 	"./notes"
@@ -202,9 +204,34 @@ func write2Byte(b *bytes.Buffer, placeholder []byte, data [2]byte) (int, error) 
 // SimpleStereoSingleNote works for 16 bit sample note. same note for left and right side
 // Example Volume and Frequency could be 32000 and 440.0 respectively
 func (pcm *PCM) SimpleStereoSingleNote(vol int16, index int, freq, octave float64) {
-	val := int16(float64(vol) * notes.CreateNote(index, octave, float64(pcm.BytesPerSecond), freq))
+	val := int16(float64(vol/2) * notes.CreateNote(index, octave, float64(pcm.BytesPerSecond), freq))
+	//fmt.Printf("%d, ", val)
 	order := pcm.Header.FileByteOrder()
+	// data := make([]byte, 2)
+	// binary.LittleEndian.PutInt16(data, val)
 	data := Int16ToBytes(val, order)
+	// sample for 16 is 4 bytes
+	pcm.Data[index] = data[0]   // left
+	pcm.Data[index+1] = data[0] // right
+	pcm.Data[index+2] = data[1] // left
+	pcm.Data[index+3] = data[1] // right
+}
+
+func (pcm *PCM) SimpleStereoChordNote(vol int16, index int, freq ...float64) {
+	sum := 0.0
+	max := (1 << 16) - 1
+	for _, f := range freq {
+		sum += notes.CreateNote(index, 1.0, float64(pcm.BytesPerSecond), f)
+	}
+	val := int(float64(vol/2) * sum)
+	if val > max {
+		val = max
+	}
+	//fmt.Printf("%d, ", val)
+	// order := pcm.Header.FileByteOrder()
+	// data := Int16ToBytes(int16(val), order)
+	data := make([]byte, 2)
+	binary.LittleEndian.PutUint16(data, uint16(val))
 	// sample for 16 is 4 bytes
 	pcm.Data[index] = data[0]   // left
 	pcm.Data[index+1] = data[0] // right

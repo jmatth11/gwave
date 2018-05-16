@@ -33,5 +33,5 @@ const (
 func CreateNote(t int, octave, bps, freq float64) float64 {
 	// times bps by <1 or >=1 to lower or raise octave respectively
 	i := float64(t) / bps * octave
-	return math.Sin(2 * math.Pi * freq * i)
+	return math.Sin(2*math.Pi*freq*i) + 1.0
 }
