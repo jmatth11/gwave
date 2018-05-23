@@ -204,12 +204,12 @@ func write2Byte(b *bytes.Buffer, placeholder []byte, data [2]byte) (int, error) 
 // SimpleStereoSingleNote works for 16 bit sample note. same note for left and right side
 // Example Volume and Frequency could be 32000 and 440.0 respectively
 func (pcm *PCM) SimpleStereoSingleNote(vol int16, index int, freq, octave float64) {
-	val := int16(float64(vol/2) * notes.CreateNote(index, octave, float64(pcm.BytesPerSecond), freq))
-	//fmt.Printf("%d, ", val)
-	order := pcm.Header.FileByteOrder()
-	// data := make([]byte, 2)
-	// binary.LittleEndian.PutInt16(data, val)
-	data := Int16ToBytes(val, order)
+	val := int16(float64(vol) * notes.CreateNote(index, octave, float64(pcm.BytesPerSecond), freq))
+	// order := pcm.Header.FileByteOrder()
+	buf := bytes.NewBuffer([]byte{})
+	// have to use binary.write
+	binary.Write(buf, binary.LittleEndian, val)
+	data := buf.Bytes()
 	// sample for 16 is 4 bytes
 	pcm.Data[index] = data[0]   // left
 	pcm.Data[index+1] = data[0] // right
@@ -217,21 +217,28 @@ func (pcm *PCM) SimpleStereoSingleNote(vol int16, index int, freq, octave float6
 	pcm.Data[index+3] = data[1] // right
 }
 
+// chords kind of work
 func (pcm *PCM) SimpleStereoChordNote(vol int16, index int, freq ...float64) {
 	sum := 0.0
-	max := (1 << 16) - 1
+	max := (1 << 15) - 1
+	min := -(1 << 15)
 	for _, f := range freq {
 		sum += notes.CreateNote(index, 1.0, float64(pcm.BytesPerSecond), f)
 	}
-	val := int(float64(vol/2) * sum)
+	val := int(float64(vol/int16(len(freq))) * sum)
 	if val > max {
 		val = max
+	}
+	if val < min {
+		val = min
 	}
 	//fmt.Printf("%d, ", val)
 	// order := pcm.Header.FileByteOrder()
 	// data := Int16ToBytes(int16(val), order)
-	data := make([]byte, 2)
-	binary.LittleEndian.PutUint16(data, uint16(val))
+	buf := bytes.NewBuffer([]byte{})
+	// have to use binary.write
+	binary.Write(buf, binary.LittleEndian, int16(val))
+	data := buf.Bytes()
 	// sample for 16 is 4 bytes
 	pcm.Data[index] = data[0]   // left
 	pcm.Data[index+1] = data[0] // right
