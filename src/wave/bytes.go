@@ -1,49 +1,36 @@
 package wave
 
-import "encoding/hex"
+import (
+	"bytes"
+	"encoding/binary"
+)
 
 // Int16ToBytes converts int16 to 2 byte array
-func Int16ToBytes(n int16, order ByteOrder) [2]byte {
-	if (order & RiffByteOrder) == RiffByteOrder {
-		return [2]byte{byte(n), byte(n >> 8)}
-	}
-	return [2]byte{byte(n >> 8), byte(n)}
+func Int16ToBytes(n int16, order binary.ByteOrder) (b [2]byte) {
+	buf := new(bytes.Buffer)
+	binary.Write(buf, order, n)
+	copy(b[:], buf.Bytes())
+	return
 }
 
 // BytesToInt16 converts 2 byte array to int16
-func BytesToInt16(b [2]byte, order ByteOrder) int16 {
-	if (order & RiffByteOrder) == RiffByteOrder {
-		return int16(b[0]) | int16(b[1])>>8
-	}
-	return int16(b[0])<<8 | int16(b[1])
+func BytesToInt16(b [2]byte, order binary.ByteOrder) (n int16) {
+	buf := bytes.NewReader(b[:])
+	binary.Read(buf, order, &n)
+	return
 }
 
 // Int32ToBytes converts int32 to 4 byte array
-func Int32ToBytes(n int32, order ByteOrder) [4]byte {
-	if (order & RiffByteOrder) == RiffByteOrder {
-		return [4]byte{byte(n), byte(n >> 8), byte(n >> 16), byte(n >> 24)}
-	}
-	return [4]byte{byte(n >> 24), byte(n >> 16), byte(n >> 8), byte(n)}
+func Int32ToBytes(n int32, order binary.ByteOrder) (b [4]byte) {
+	buf := new(bytes.Buffer)
+	binary.Write(buf, order, n)
+	copy(b[:], buf.Bytes())
+	return
 }
 
 // BytesToInt32 converts 4 byte array into int32
-func BytesToInt32(b [4]byte, order ByteOrder) int32 {
-	if (order & RiffByteOrder) == RiffByteOrder {
-		return int32(b[0]) | int32(b[1])<<8 | int32(b[2])<<16 | int32(b[3])<<24
-	}
-	return int32(b[0])<<24 | int32(b[1])<<16 | int32(b[2])<<8 | int32(b[3])
-}
-
-// ConvertBytesToHex is a wrapper to handle converting regular bytes to hex
-func ConvertBytesToHex(src []byte) []byte {
-	dst := make([]byte, hex.EncodedLen(len(src)))
-	hex.Encode(dst, src)
-	return dst
-}
-
-// ConvertHexToBytes is a wrapper to handle converting hex to regular bytes
-func ConvertHexToBytes(src []byte) ([]byte, error) {
-	dst := make([]byte, hex.DecodedLen(len(src)))
-	_, err := hex.Decode(dst, src)
-	return dst, err
+func BytesToInt32(b [4]byte, order binary.ByteOrder) (n int32) {
+	buf := bytes.NewReader(b[:])
+	binary.Read(buf, order, &n)
+	return
 }

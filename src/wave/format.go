@@ -1,5 +1,9 @@
 package wave
 
+import (
+	"encoding/binary"
+)
+
 // currently not supporting Non-PCM and Extensible fmt types
 
 // Header is a simple layout of the format for a Wave file
@@ -32,18 +36,11 @@ type Header struct {
 	DataSize int32
 }
 
-// ByteOrder type for comparison in converting bytes
-type ByteOrder int8
-
 const (
 	// PcmType is to represent the PCM type
 	PcmType = 1
 	// CdSampleRate is the sample rate for a wave file that a CD would have
 	CdSampleRate = 44100
-	// RiffByteOrder value to compare when converting bytes
-	RiffByteOrder = ByteOrder(1)
-	// RifxByteOrder value to compare when converting bytes
-	RifxByteOrder = ByteOrder(2)
 )
 
 var (
@@ -55,10 +52,14 @@ var (
 	Riff = [4]byte{'R', 'I', 'F', 'F'}
 	// DataMarker represents the DATA marker in the header.
 	DataMarker = [4]byte{'d', 'a', 't', 'a'}
+	// RiffByteOrder value to compare when converting bytes
+	RiffByteOrder = binary.LittleEndian
+	// RifxByteOrder value to compare when converting bytes
+	RifxByteOrder = binary.BigEndian
 )
 
 // FileByteOrder returns the byte order the file is
-func (h Header) FileByteOrder() ByteOrder {
+func (h Header) FileByteOrder() binary.ByteOrder {
 	if h.ByteType[3] == 'F' {
 		return RiffByteOrder
 	}

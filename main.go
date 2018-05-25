@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 
-	"./src/wave"
-	"./src/wave/notes"
+	"wave"
+	"wave/notes"
 )
 
 var pcm = wave.DefaultCDPCM()
