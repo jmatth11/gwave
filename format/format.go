@@ -1,4 +1,4 @@
-package wave
+package format
 
 import (
 	"encoding/binary"
@@ -57,6 +57,11 @@ var (
 	// RifxByteOrder value to compare when converting bytes
 	RifxByteOrder = binary.BigEndian
 )
+
+type FileFormat interface {
+	Header() Header
+	WriteToFile(fileName string) error
+}
 
 // FileByteOrder returns the byte order the file is
 func (h Header) FileByteOrder() binary.ByteOrder {

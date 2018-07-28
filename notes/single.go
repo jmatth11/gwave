@@ -2,7 +2,9 @@ package notes
 
 import (
 	"math"
-	"wave"
+	"time"
+
+	"github.com/iCurlmyster/wave/format"
 )
 
 const (
@@ -37,13 +39,27 @@ type Note struct {
 	Volume    int16
 	Frequency float64
 	Octave    float64
+	Length    time.Duration
 }
 
-// CreateNote creates a note at a certain octave from middle C at a certain time point.
-func CreateNote(t int, octave, bps, freq float64) float64 {
-	// times bps by <1 or >=1 to lower or raise octave respectively
-	i := 2.0 * math.Pi * freq / (bps * octave)
-	return math.Sin(i * float64(t)) //+ 1.0
+// SilentNote generates a silent note of defined length
+func SilentNote(length time.Duration) *Note {
+	return &Note{
+		Volume:    0,
+		Frequency: 0.0,
+		Octave:    0.0,
+		Length:    length,
+	}
+}
+
+// NewNote generates a new note object
+func NewNote(vol int16, freq, oct float64, len time.Duration) *Note {
+	return &Note{
+		Volume:    vol,
+		Frequency: freq,
+		Octave:    oct,
+		Length:    len,
+	}
 }
 
 // AtTime grabs sin wave at time t
@@ -60,7 +76,7 @@ func NoteAtTime(t int, bps float64, note Note) float64 {
 
 // ToData works for 16 bit sample note. same note for left and right side
 // Example Volume and Frequency could be 32000 and 440.0 respectively
-func (note Note) ToData(vol int16, index int, header wave.Header) []byte {
+func (note Note) ToData(vol int16, index int, header format.Header) [2]byte {
 	val := int16(float64(vol) * note.AtTime(index, float64(header.BytesPerSecond)))
-	return Int16ToBytes(val)
+	return format.Int16ToBytes(val, header.FileByteOrder())
 }

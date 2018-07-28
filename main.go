@@ -3,11 +3,11 @@ package main
 import (
 	"fmt"
 
-	"wave"
-	"wave/notes"
+	"github.com/iCurlmyster/wave/notes"
+	"github.com/iCurlmyster/wave/type"
 )
 
-var pcm = wave.DefaultCDPCM()
+var pcm = type.DefaultCDPCM()
 var oneSecond = int(pcm.Header.BytesPerSecond)
 var playTime = oneSecond * 4
 
