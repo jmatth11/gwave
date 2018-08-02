@@ -58,6 +58,7 @@ var (
 	RifxByteOrder = binary.BigEndian
 )
 
+// TODO create interface for session to accept
 type FileFormat interface {
 	Header() Header
 	WriteToFile(fileName string) error

@@ -2,7 +2,10 @@ package format
 
 import (
 	"bytes"
+	"encoding/binary"
 	"os"
+
+	"github.com/iCurlmyster/wave/notes"
 )
 
 // PCM represents a PCM wave file
@@ -212,6 +215,34 @@ func write2Byte(b *bytes.Buffer, placeholder []byte, data [2]byte) (int, error) 
 // 	pcm.Data[index+2] = data[1] // left
 // 	pcm.Data[index+3] = data[1] // right
 // }
+
+func (pcm *PCM) AddNote(i int, n notes.Note) {
+	val := n.ToData(pcm.Header.BytesPerSecond, i)
+	data := pcm.convertToData(val)
+	for index := -1; i < (len(data) - 1); i++ {
+		pcm.Data[index+1] = data[index+1]
+		pcm.Data[index+2] = data[index+1]
+	}
+}
+
+func (pcm *PCM) convertToData(d float64) []byte {
+	buf := bytes.NewBuffer([]byte{})
+	switch pcm.Header.BitsPerSample {
+	case 8:
+		{
+			binary.Write(buf, pcm.Header.FileByteOrder(), int8(d))
+		}
+	case 16:
+		{
+			binary.Write(buf, pcm.Header.FileByteOrder(), int16(d))
+		}
+	default:
+		{
+			binary.Write(buf, pcm.Header.FileByteOrder(), int32(d))
+		}
+	}
+	return buf.Bytes()
+}
 
 // chords kind of work
 // func (pcm *PCM) SimpleStereoChordNote(vol int16, index int, freq ...float64) {
