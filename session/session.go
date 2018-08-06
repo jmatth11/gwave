@@ -45,4 +45,7 @@ func (sess *Session) AddNotes(ns ...*notes.Note) {
 func (sess *Session) WriteFile(pcm *format.PCM, fileName string) {
 	pcm.Data = make([]byte, sess.length)
 	// TODO need to finish functions to write data to data
+	for i := 0; i < len(sess.noteCollection); i++ {
+		pcm.AddNote(i, sess.noteCollection[i])
+	}
 }
