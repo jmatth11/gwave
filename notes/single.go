@@ -51,7 +51,17 @@ func SilentNote(length time.Duration) *Note {
 }
 
 // NewNote generates a new note object
-func NewNote(vol, oct float64, len time.Duration, freq ...float64) *Note {
+func NewNote(vol float64, len time.Duration, freq ...float64) *Note {
+	return &Note{
+		Volume:    vol,
+		Frequency: freq,
+		Octave:    1.0,
+		Length:    len,
+	}
+}
+
+// NewNoteWithOctave generates a new note with octave
+func NewNoteWithOctave(vol, oct float64, len time.Duration, freq ...float64) *Note {
 	return &Note{
 		Volume:    vol,
 		Frequency: freq,

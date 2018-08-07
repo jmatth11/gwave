@@ -2,6 +2,7 @@ package session
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/iCurlmyster/wave/format"
@@ -42,10 +43,18 @@ func (sess *Session) AddNotes(ns ...*notes.Note) {
 	sess.noteCollection = append(sess.noteCollection, ns...)
 }
 
-func (sess *Session) WriteFile(pcm *format.PCM, fileName string) {
-	pcm.Data = make([]byte, sess.length)
+func (sess *Session) WriteData(pcm *format.PCM) {
+	size := int((sess.length / time.Second) * time.Duration(pcm.BytesPerSecond))
+	fmt.Println("data size", size, "BytesPerSecond:", pcm.Header.BytesPerSecond)
+	pcm.Data = make([]byte, size+1)
+	dur := 0
 	// TODO need to finish functions to write data to data
 	for i := 0; i < len(sess.noteCollection); i++ {
-		pcm.AddNote(i, sess.noteCollection[i])
+		tmp, err := pcm.AddNote(i+dur, sess.noteCollection[i])
+		if err != nil {
+			fmt.Println(err)
+		}
+		dur += tmp
 	}
+	fmt.Println("final dur", dur)
 }

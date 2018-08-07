@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"os"
 	"time"
 
@@ -135,11 +136,12 @@ func (pcm *PCM) WriteToFile(fileName string) error {
 
 // WritePCM takes a PCM object and writes out contents to file specified by fileName
 func WritePCM(pcm *PCM, fileName string) error {
-	f, err := os.OpenFile(fileName, os.O_RDWR|os.O_CREATE, 0666)
+	f, err := os.OpenFile(fileName, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
+	fmt.Println("opened filed")
 	header := pcm.Header
 	order := header.FileByteOrder()
 	var offset int64
@@ -182,6 +184,7 @@ func WritePCM(pcm *PCM, fileName string) error {
 	if err != nil {
 		return err
 	}
+	fmt.Println("finished writing header")
 	// data
 	offset, err = writeOffset(f, pcm.Data, offset)
 	return err
@@ -203,70 +206,85 @@ func write2Byte(b *bytes.Buffer, placeholder []byte, data [2]byte) (int, error) 
 }
 
 // AddNote pushes the note data for the note length onto the buffer
-func (pcm *PCM) AddNote(i int, n *notes.Note) error {
+func (pcm *PCM) AddNote(i int, n *notes.Note) (int, error) {
 	if n.Length < 1 {
-		return errors.New("length of note is too small. must be greater than or equal to 1")
+		return 0, errors.New("length of note is too small. must be greater than or equal to 1")
 	}
-	duration := int(time.Duration(pcm.Header.BytesPerSecond) / (n.Length / time.Second))
+	duration := int(time.Duration(pcm.Header.BytesPerSecond)*(n.Length/time.Second)) - 1
+	fmt.Println("duration", duration)
 	pcm.writeNote(i, duration, n)
-	return nil
+	return duration, nil
 }
 
-func (pcm *PCM) handleNoteBySample(index, nc int, data []byte) {
+func (pcm *PCM) handleNoteBySample(index, c, di int, data []byte) {
+	//fmt.Println("index", index, "c", c)
 	switch pcm.Header.BitsPerSample {
 	case 8:
 		{
-			pcm.Data[index+nc] = data[index+nc]
+			pcm.Data[index+c] = data[di]
 		}
 	case 16:
 		{
-			pcm.Data[index+nc] = data[index+nc]
-			pcm.Data[index+nc+1] = data[index+nc+1]
+			pcm.Data[index+c] = data[di]
+			pcm.Data[index+c+1] = data[di]
 		}
 	default:
 		{
-			pcm.Data[index+nc] = data[index+nc]
-			pcm.Data[index+nc+1] = data[index+nc+1]
-			pcm.Data[index+nc+2] = data[index+nc+2]
-			pcm.Data[index+nc+3] = data[index+nc+3]
+			pcm.Data[index+c] = data[di]
+			pcm.Data[index+c+1] = data[di]
+			pcm.Data[index+c+2] = data[di]
+			pcm.Data[index+c+3] = data[di]
 		}
 	}
 }
 
 func (pcm *PCM) writeNote(i, d int, n *notes.Note) {
+	bc := pcm.getByteCount()
 	nc := int(pcm.Header.NumChannels)
-	for j := 0; j < d; j++ {
+	jumpc := bc * nc
+	for j := 0; j < d; j += jumpc {
 		val := n.ToData(pcm.Header.BytesPerSecond, j+i)
-		data, bc := pcm.convertToData(val)
-		for index := 0; index < (len(data) - 1); index += bc {
-			for c := 0; c < nc; c += nc {
-				pcm.handleNoteBySample(i, nc, data)
-			}
+		data := pcm.convertToData(val)
+		for index := 0; index < jumpc; index += bc {
+			pcm.handleNoteBySample(i+j, index, index/nc, data)
 		}
 	}
 }
 
-func (pcm *PCM) convertToData(d float64) ([]byte, int) {
+func (pcm *PCM) convertToData(d float64) []byte {
 	buf := bytes.NewBuffer([]byte{})
-	bc := 0
 	switch pcm.Header.BitsPerSample {
 	case 8:
 		{
 			binary.Write(buf, pcm.Header.FileByteOrder(), int8(d))
-			bc = 1
 		}
 	case 16:
 		{
 			binary.Write(buf, pcm.Header.FileByteOrder(), int16(d))
-			bc = 2
 		}
 	default:
 		{
 			binary.Write(buf, pcm.Header.FileByteOrder(), int32(d))
-			bc = 4
 		}
 	}
-	return buf.Bytes(), bc
+	return buf.Bytes()
+}
+
+func (pcm *PCM) getByteCount() int {
+	switch pcm.Header.BitsPerSample {
+	case 8:
+		{
+			return 1
+		}
+	case 16:
+		{
+			return 2
+		}
+	default:
+		{
+			return 4
+		}
+	}
 }
 
 // AllocateDataSize sets up the PCM Data field to the size given.
