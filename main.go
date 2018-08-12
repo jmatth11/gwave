@@ -23,9 +23,12 @@ func main() {
 	nfs := notes.NewNote(100, time.Second, notes.Fs)
 	nd := notes.NewNote(100, time.Second, notes.D)
 
-	sess.AddNotes(na, ng, nfs, nd, na, ng, nfs, nd)
+	sess.AddNotes(na, ng, nfs, nd)
 	fmt.Println("added notes. length:", sess.Length())
+	start := time.Now()
 	sess.WriteData(pcm)
+	end := time.Now()
+	fmt.Printf("time: %v\n", end.Sub(start))
 	fmt.Println("finished writing data to pcm")
 	err := pcm.WriteToFile("testFile.wav")
 	if err != nil {

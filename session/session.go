@@ -3,6 +3,7 @@ package session
 import (
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/iCurlmyster/wave/format"
@@ -46,15 +47,17 @@ func (sess *Session) AddNotes(ns ...*notes.Note) {
 func (sess *Session) WriteData(pcm *format.PCM) {
 	size := int((sess.length / time.Second) * time.Duration(pcm.BytesPerSecond))
 	fmt.Println("data size", size, "BytesPerSecond:", pcm.Header.BytesPerSecond)
-	pcm.Data = make([]byte, size+1)
+	pcm.Data = make([]byte, size)
 	dur := 0
-	// TODO need to finish functions to write data to data
+	wg := sync.WaitGroup{}
 	for i := 0; i < len(sess.noteCollection); i++ {
-		tmp, err := pcm.AddNote(i+dur, sess.noteCollection[i])
+		tmp, err := pcm.AddNoteParallel(dur, sess.noteCollection[i], &wg)
+		//tmp, err := pcm.AddNote(dur, sess.noteCollection[i])
 		if err != nil {
 			fmt.Println(err)
 		}
 		dur += tmp
 	}
+	wg.Wait()
 	fmt.Println("final dur", dur)
 }

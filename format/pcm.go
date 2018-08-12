@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/iCurlmyster/wave/notes"
@@ -30,8 +31,8 @@ func DefaultCDPCM() *PCM {
 			FmtType:        PcmType,
 			NumChannels:    numChannels,
 			SampleRate:     CdSampleRate,
-			BytesPerSecond: CdSampleRate * int32(bitsPerSample) * int32(numChannels) / 8,
-			BlockAlign:     numChannels * bitsPerSample / 8,
+			BytesPerSecond: (CdSampleRate * int32(bitsPerSample) * int32(numChannels)) / 8,
+			BlockAlign:     (numChannels * bitsPerSample) / 8,
 			BitsPerSample:  bitsPerSample,
 			DataMarker:     DataMarker,
 		},
@@ -210,45 +211,50 @@ func (pcm *PCM) AddNote(i int, n *notes.Note) (int, error) {
 	if n.Length < 1 {
 		return 0, errors.New("length of note is too small. must be greater than or equal to 1")
 	}
-	duration := int(time.Duration(pcm.Header.BytesPerSecond)*(n.Length/time.Second)) - 1
-	fmt.Println("duration", duration)
+	duration := int(time.Duration(pcm.Header.BytesPerSecond) * (n.Length / time.Second))
+	//fmt.Println("duration", duration)
 	pcm.writeNote(i, duration, n)
 	return duration, nil
 }
 
-func (pcm *PCM) handleNoteBySample(index, c, di int, data []byte) {
-	//fmt.Println("index", index, "c", c)
-	switch pcm.Header.BitsPerSample {
-	case 8:
-		{
-			pcm.Data[index+c] = data[di]
-		}
-	case 16:
-		{
-			pcm.Data[index+c] = data[di]
-			pcm.Data[index+c+1] = data[di]
-		}
-	default:
-		{
-			pcm.Data[index+c] = data[di]
-			pcm.Data[index+c+1] = data[di]
-			pcm.Data[index+c+2] = data[di]
-			pcm.Data[index+c+3] = data[di]
-		}
+func (pcm *PCM) AddNoteParallel(i int, n *notes.Note, wg *sync.WaitGroup) (int, error) {
+	if n.Length < 1 {
+		return 0, errors.New("length of note is too small. must be greater than or equal to 1")
 	}
+	duration := int(time.Duration(pcm.Header.BytesPerSecond) * (n.Length / time.Second))
+	fmt.Println("duration", duration)
+	wg.Add(1)
+	go func() {
+		pcm.writeNote(i, duration, n)
+		wg.Done()
+	}()
+	return duration, nil
+}
+
+func (pcm *PCM) handleNoteBySample(index int, data byte) int {
+	nc := int(pcm.Header.NumChannels)
+	for c := 0; c < nc; c++ {
+		pcm.Data[index+c] = data
+	}
+	return nc
 }
 
 func (pcm *PCM) writeNote(i, d int, n *notes.Note) {
-	bc := pcm.getByteCount()
+	bc := pcm.GetByteCount()
 	nc := int(pcm.Header.NumChannels)
 	jumpc := bc * nc
-	for j := 0; j < d; j += jumpc {
-		val := n.ToData(pcm.Header.BytesPerSecond, j+i)
+	j := 0
+	phase := 0
+	for ; j < d; j += jumpc {
+		val := n.ToData(pcm.Header.BytesPerSecond, phase+i)
 		data := pcm.convertToData(val)
-		for index := 0; index < jumpc; index += bc {
-			pcm.handleNoteBySample(i+j, index, index/nc, data)
+		channels := 0
+		for index := 0; index < len(data); index++ {
+			channels += pcm.handleNoteBySample(i+j+channels, data[index])
 		}
+		phase++
 	}
+	fmt.Println("j val", j, "jumpc:", jumpc, "nc", nc, "i+j", i+j)
 }
 
 func (pcm *PCM) convertToData(d float64) []byte {
@@ -256,7 +262,8 @@ func (pcm *PCM) convertToData(d float64) []byte {
 	switch pcm.Header.BitsPerSample {
 	case 8:
 		{
-			binary.Write(buf, pcm.Header.FileByteOrder(), int8(d))
+			// something is wrong with this mode. note comes out as square wave
+			binary.Write(buf, pcm.Header.FileByteOrder(), uint8(d))
 		}
 	case 16:
 		{
@@ -270,7 +277,7 @@ func (pcm *PCM) convertToData(d float64) []byte {
 	return buf.Bytes()
 }
 
-func (pcm *PCM) getByteCount() int {
+func (pcm *PCM) GetByteCount() int {
 	switch pcm.Header.BitsPerSample {
 	case 8:
 		{
