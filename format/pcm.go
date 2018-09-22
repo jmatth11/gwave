@@ -153,7 +153,7 @@ func WritePCM(pcm *PCM, fileName string) error {
 	// fmt marker
 	bHead.Write(header.FmtMarker[:])
 	// format size.
-	write4Byte(bHead, byte4, Int32ToBytes(16, order))
+	write4Byte(bHead, byte4, Int32ToBytes(header.FmtSize, order))
 	// pcm type
 	write2Byte(bHead, byte2, Int16ToBytes(header.FmtType, order))
 	// num channels
@@ -180,18 +180,25 @@ func WritePCM(pcm *PCM, fileName string) error {
 	if err != nil {
 		return err
 	}
+	fmt.Println("first offset", offset)
 	// rest of header
 	offset, err = writeOffset(f, bHead.Bytes(), offset)
 	if err != nil {
 		return err
 	}
+	tmpD := bHead.Bytes()
+	fmt.Println("bhead bytes end", tmpD[len(tmpD)-11:])
+	fmt.Println("10 bytes of data", pcm.Data[:20])
+	fmt.Println("second offset", offset)
 	fmt.Println("finished writing header")
 	// data
 	offset, err = writeOffset(f, pcm.Data, offset)
+	fmt.Println("Last offset", offset)
 	return err
 }
 
 func writeOffset(f *os.File, b []byte, offset int64) (int64, error) {
+	fmt.Println()
 	n, err := f.WriteAt(b, offset)
 	return (offset + int64(n)), err
 }
@@ -262,8 +269,8 @@ func (pcm *PCM) convertToData(d float64) []byte {
 	switch pcm.Header.BitsPerSample {
 	case 8:
 		{
-			// something is wrong with this mode. note comes out as square wave
-			binary.Write(buf, pcm.Header.FileByteOrder(), uint8(d))
+			// correct range offset with lower signed value
+			binary.Write(buf, pcm.Header.FileByteOrder(), uint8(d+128))
 		}
 	case 16:
 		{

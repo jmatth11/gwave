@@ -90,7 +90,7 @@ func NoteAtTime(t int, bps float64, note Note) float64 {
 func (note Note) ToData(bps int32, index int) float64 {
 	freqLen := len(note.Frequency)
 	vol := note.Volume
-	if freqLen > 0 {
+	if freqLen > 1 {
 		vol = vol / float64(freqLen)
 	}
 	return vol * note.AtTime(index, float64(bps))
