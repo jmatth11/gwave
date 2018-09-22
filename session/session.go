@@ -44,6 +44,7 @@ func (sess *Session) AddNotes(ns ...*notes.Note) {
 	sess.noteCollection = append(sess.noteCollection, ns...)
 }
 
+// WriteData writes session data out to PCM wave object
 func (sess *Session) WriteData(pcm *format.PCM) {
 	size := int((sess.length / time.Second) * time.Duration(pcm.BytesPerSecond))
 	fmt.Println("data size", size, "BytesPerSecond:", pcm.Header.BytesPerSecond)
@@ -59,5 +60,4 @@ func (sess *Session) WriteData(pcm *format.PCM) {
 		dur += tmp
 	}
 	wg.Wait()
-	fmt.Println("final dur", dur)
 }

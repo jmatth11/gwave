@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
-	"fmt"
 	"os"
 	"sync"
 	"time"
@@ -18,13 +17,16 @@ type PCM struct {
 	Data []byte
 }
 
-// DefaultCDPCM creates a generic 16 bit Riff CD quality wave file
+// DefaultCDPCM creates a generic stereo 16 bit Riff CD quality wave file
 func DefaultCDPCM() *PCM {
-	var numChannels int16 = 2
-	var bitsPerSample int16 = 16
+	return NewCDPCM(Riff, 2, 16)
+}
+
+// NewCDPCM generates a PCM wave file object with CD quality
+func NewCDPCM(fileType [4]byte, numChannels, bitsPerSample int16) *PCM {
 	return &PCM{
 		Header: Header{
-			ByteType:       Riff,
+			ByteType:       fileType,
 			HeaderType:     Wav,
 			FmtMarker:      FmtMarker,
 			FmtSize:        16,
@@ -142,7 +144,6 @@ func WritePCM(pcm *PCM, fileName string) error {
 		return err
 	}
 	defer f.Close()
-	fmt.Println("opened filed")
 	header := pcm.Header
 	order := header.FileByteOrder()
 	var offset int64
@@ -180,25 +181,17 @@ func WritePCM(pcm *PCM, fileName string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("first offset", offset)
 	// rest of header
 	offset, err = writeOffset(f, bHead.Bytes(), offset)
 	if err != nil {
 		return err
 	}
-	tmpD := bHead.Bytes()
-	fmt.Println("bhead bytes end", tmpD[len(tmpD)-11:])
-	fmt.Println("10 bytes of data", pcm.Data[:20])
-	fmt.Println("second offset", offset)
-	fmt.Println("finished writing header")
 	// data
 	offset, err = writeOffset(f, pcm.Data, offset)
-	fmt.Println("Last offset", offset)
 	return err
 }
 
 func writeOffset(f *os.File, b []byte, offset int64) (int64, error) {
-	fmt.Println()
 	n, err := f.WriteAt(b, offset)
 	return (offset + int64(n)), err
 }
@@ -219,17 +212,19 @@ func (pcm *PCM) AddNote(i int, n *notes.Note) (int, error) {
 		return 0, errors.New("length of note is too small. must be greater than or equal to 1")
 	}
 	duration := int(time.Duration(pcm.Header.BytesPerSecond) * (n.Length / time.Second))
-	//fmt.Println("duration", duration)
 	pcm.writeNote(i, duration, n)
 	return duration, nil
 }
 
+// Did this because working on small scale. Maybe should rework to handle groups of notes instead of individual notes for bigger sound samples
+
+// AddNoteParallel Adds notes to file in parallel.
+// Accepts a WaitGroup to increment and call Done when writing this note is complete
 func (pcm *PCM) AddNoteParallel(i int, n *notes.Note, wg *sync.WaitGroup) (int, error) {
 	if n.Length < 1 {
 		return 0, errors.New("length of note is too small. must be greater than or equal to 1")
 	}
 	duration := int(time.Duration(pcm.Header.BytesPerSecond) * (n.Length / time.Second))
-	fmt.Println("duration", duration)
 	wg.Add(1)
 	go func() {
 		pcm.writeNote(i, duration, n)
@@ -238,30 +233,28 @@ func (pcm *PCM) AddNoteParallel(i int, n *notes.Note, wg *sync.WaitGroup) (int, 
 	return duration, nil
 }
 
-func (pcm *PCM) handleNoteBySample(index int, data byte) int {
-	nc := int(pcm.Header.NumChannels)
-	for c := 0; c < nc; c++ {
-		pcm.Data[index+c] = data
+func (pcm *PCM) handleNoteBySample(index int, data []byte) int {
+	dataLen := len(data)
+	for c := 0; c < dataLen; c++ {
+		pcm.Data[index+c] = data[c]
 	}
-	return nc
+	return dataLen
 }
 
 func (pcm *PCM) writeNote(i, d int, n *notes.Note) {
 	bc := pcm.GetByteCount()
 	nc := int(pcm.Header.NumChannels)
 	jumpc := bc * nc
-	j := 0
 	phase := 0
-	for ; j < d; j += jumpc {
+	for j := 0; j < d; j += jumpc {
 		val := n.ToData(pcm.Header.BytesPerSecond, phase+i)
 		data := pcm.convertToData(val)
-		channels := 0
-		for index := 0; index < len(data); index++ {
-			channels += pcm.handleNoteBySample(i+j+channels, data[index])
+		dataLen := 0
+		for index := 0; index < nc; index++ {
+			dataLen += pcm.handleNoteBySample(i+j+dataLen, data)
 		}
 		phase++
 	}
-	fmt.Println("j val", j, "jumpc:", jumpc, "nc", nc, "i+j", i+j)
 }
 
 func (pcm *PCM) convertToData(d float64) []byte {
@@ -284,6 +277,7 @@ func (pcm *PCM) convertToData(d float64) []byte {
 	return buf.Bytes()
 }
 
+// GetByteCount returns the count of bytes in a sample
 func (pcm *PCM) GetByteCount() int {
 	switch pcm.Header.BitsPerSample {
 	case 8:

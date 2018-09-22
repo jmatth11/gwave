@@ -41,6 +41,8 @@ const (
 	PcmType = 1
 	// CdSampleRate is the sample rate for a wave file that a CD would have
 	CdSampleRate = 44100
+	// DatSampleRate sample rate for DAT
+	DatSampleRate = 48000
 )
 
 var (
