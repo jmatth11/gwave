@@ -15,10 +15,10 @@ func main() {
 	sess := session.NewSession()
 
 	// params: volume, duration, frequency
-	na := notes.NewNote(7000, time.Second, notes.A)
-	ng := notes.NewNote(7000, time.Second, notes.G)
-	nfs := notes.NewNote(7000, time.Second, notes.Fs)
-	nd := notes.NewNote(7000, time.Second, notes.D)
+	nd := notes.NewNote(17000, time.Second, notes.A)
+	nfs := notes.NewNote(17000, time.Second, notes.D)
+	ng := notes.NewNote(17000, time.Second, notes.G)
+	na := notes.NewNote(17000, time.Second, notes.C)
 
 	sess.AddNotes(na, ng, nfs, nd)
 	start := time.Now()

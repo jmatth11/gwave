@@ -59,10 +59,10 @@ func writeNote(i, d int, n *notes.Note, wWriter format.WaveWriter) error {
 	bc := wWriter.FileHeader().GetByteCount()
 	nc := int(wWriter.FileHeader().NumChannels)
 	jumpc := bc * nc
-	// TODO might need to extract phase to higher level so that the phase is carried on between notes
+	// TODO maybe find a better way to handle phase. notes still have jumping sound between them
 	phase := 0
 	for j := 0; j < d; j += jumpc {
-		val := n.ToData(wWriter.FileHeader().BytesPerSecond, phase+i)
+		val := n.ToData(phase + i)
 		data := convertToData(val, wWriter.FileHeader().BitsPerSample, wWriter.FileHeader().FileByteOrder())
 		dataLen := 0
 		for index := 0; index < nc; index++ {

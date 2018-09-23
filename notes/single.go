@@ -36,7 +36,6 @@ const (
 type Note struct {
 	Volume    float64
 	Frequency []float64
-	Octave    float64
 	Length    time.Duration
 }
 
@@ -45,7 +44,6 @@ func SilentNote(length time.Duration) *Note {
 	return &Note{
 		Volume:    0.0,
 		Frequency: []float64{0.0},
-		Octave:    0.0,
 		Length:    length,
 	}
 }
@@ -55,43 +53,31 @@ func NewNote(vol float64, len time.Duration, freq ...float64) *Note {
 	return &Note{
 		Volume:    vol,
 		Frequency: freq,
-		Octave:    1.0,
 		Length:    len,
 	}
 }
 
-// NewNoteWithOctave generates a new note with octave
-func NewNoteWithOctave(vol, oct float64, len time.Duration, freq ...float64) *Note {
-	return &Note{
-		Volume:    vol,
-		Frequency: freq,
-		Octave:    oct,
-		Length:    len,
-	}
+// AtTime grabs sin value at time t
+func (note Note) AtTime(t int) float64 {
+	return NoteAtTime(t, note)
 }
 
-// AtTime grabs sin wave at time t
-func (note Note) AtTime(t int, bps float64) float64 {
-	return NoteAtTime(t, bps, note)
-}
-
-// NoteAtTime grabs sin wave at time t
-func NoteAtTime(t int, bps float64, note Note) float64 {
-	// times bps by <1 or >=1 to lower or raise octave respectively
+// NoteAtTime grabs sin value at time t
+func NoteAtTime(t int, note Note) float64 {
 	sum := 0.0
 	for i := 0; i < len(note.Frequency); i++ {
-		sum = 2.0 * math.Pi * note.Frequency[i] / (bps * note.Octave)
+		sum += 2.0 * math.Pi / note.Frequency[i]
 	}
 	return math.Sin(sum * float64(t))
 }
 
 // ToData generates a float64 value representation of the note
 // Accounts for mutliple notes by dividing the volume by the number of notes
-func (note Note) ToData(bps int32, index int) float64 {
+func (note Note) ToData(index int) float64 {
 	freqLen := len(note.Frequency)
 	vol := note.Volume
 	if freqLen > 1 {
 		vol = vol / float64(freqLen)
 	}
-	return vol * note.AtTime(index, float64(bps))
+	return vol * note.AtTime(index)
 }
