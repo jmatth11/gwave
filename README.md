@@ -6,9 +6,9 @@ requires:
 
 This project is a WIP but some of the functionality that can be done is:
 - Read and Write wave files. (Currently only PCM type with a 16 byte fmt section)
-- Generate notes and chords (can change octave of chords as well)
-- Create a Session object to store notes into
-- Write out notes, stored in a Session, to a wave file.
+- Generate notes and chords as Note objects (can change octave of Note objects as well)
+- Create a Session object to store Note objects into
+- Write out Note objects, stored in a Session, to a wave file.
 - Supports 8bit, 16bit, and maybe 32bit (haven't verified the 32bit)
 - Supports multiple channels but you normally will only need mono (1) and stereo (2)
 - Supports little/big endian files (RIFF, RIFX)
