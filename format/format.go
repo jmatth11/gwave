@@ -2,6 +2,7 @@ package format
 
 import (
 	"encoding/binary"
+	"io"
 )
 
 // currently not supporting Non-PCM and Extensible fmt types
@@ -60,10 +61,12 @@ var (
 	RifxByteOrder = binary.BigEndian
 )
 
-// TODO create interface for session to accept
-type FileFormat interface {
-	Header() Header
-	WriteToFile(fileName string) error
+// WaveWriter defines how to interact with a Wave File object for writing
+type WaveWriter interface {
+	io.Writer
+	io.WriterAt
+	FileHeader() Header
+	AllocateDataSize(size int32)
 }
 
 // FileByteOrder returns the byte order the file is
@@ -72,4 +75,22 @@ func (h Header) FileByteOrder() binary.ByteOrder {
 		return RiffByteOrder
 	}
 	return RifxByteOrder
+}
+
+// GetByteCount returns the count of bytes in a sample
+func (h Header) GetByteCount() int {
+	switch h.BitsPerSample {
+	case 8:
+		{
+			return 1
+		}
+	case 16:
+		{
+			return 2
+		}
+	default:
+		{
+			return 4
+		}
+	}
 }

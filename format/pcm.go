@@ -2,13 +2,8 @@ package format
 
 import (
 	"bytes"
-	"encoding/binary"
 	"errors"
 	"os"
-	"sync"
-	"time"
-
-	"github.com/iCurlmyster/wave/notes"
 )
 
 // PCM represents a PCM wave file
@@ -206,97 +201,41 @@ func write2Byte(b *bytes.Buffer, placeholder []byte, data [2]byte) (int, error) 
 	return b.Write(placeholder)
 }
 
-// AddNote pushes the note data for the note length onto the buffer
-func (pcm *PCM) AddNote(i int, n *notes.Note) (int, error) {
-	if n.Length < 1 {
-		return 0, errors.New("length of note is too small. must be greater than or equal to 1")
-	}
-	duration := int(time.Duration(pcm.Header.BytesPerSecond) * (n.Length / time.Second))
-	pcm.writeNote(i, duration, n)
-	return duration, nil
-}
-
-// Did this because working on small scale. Maybe should rework to handle groups of notes instead of individual notes for bigger sound samples
-
-// AddNoteParallel Adds notes to file in parallel.
-// Accepts a WaitGroup to increment and call Done when writing this note is complete
-func (pcm *PCM) AddNoteParallel(i int, n *notes.Note, wg *sync.WaitGroup) (int, error) {
-	if n.Length < 1 {
-		return 0, errors.New("length of note is too small. must be greater than or equal to 1")
-	}
-	duration := int(time.Duration(pcm.Header.BytesPerSecond) * (n.Length / time.Second))
-	wg.Add(1)
-	go func() {
-		pcm.writeNote(i, duration, n)
-		wg.Done()
-	}()
-	return duration, nil
-}
-
-func (pcm *PCM) handleNoteBySample(index int, data []byte) int {
-	dataLen := len(data)
-	for c := 0; c < dataLen; c++ {
-		pcm.Data[index+c] = data[c]
-	}
-	return dataLen
-}
-
-func (pcm *PCM) writeNote(i, d int, n *notes.Note) {
-	bc := pcm.GetByteCount()
-	nc := int(pcm.Header.NumChannels)
-	jumpc := bc * nc
-	phase := 0
-	for j := 0; j < d; j += jumpc {
-		val := n.ToData(pcm.Header.BytesPerSecond, phase+i)
-		data := pcm.convertToData(val)
-		dataLen := 0
-		for index := 0; index < nc; index++ {
-			dataLen += pcm.handleNoteBySample(i+j+dataLen, data)
-		}
-		phase++
-	}
-}
-
-func (pcm *PCM) convertToData(d float64) []byte {
-	buf := bytes.NewBuffer([]byte{})
-	switch pcm.Header.BitsPerSample {
-	case 8:
-		{
-			// correct range offset with lower signed value
-			binary.Write(buf, pcm.Header.FileByteOrder(), uint8(d+128))
-		}
-	case 16:
-		{
-			binary.Write(buf, pcm.Header.FileByteOrder(), int16(d))
-		}
-	default:
-		{
-			binary.Write(buf, pcm.Header.FileByteOrder(), int32(d))
-		}
-	}
-	return buf.Bytes()
-}
-
-// GetByteCount returns the count of bytes in a sample
-func (pcm *PCM) GetByteCount() int {
-	switch pcm.Header.BitsPerSample {
-	case 8:
-		{
-			return 1
-		}
-	case 16:
-		{
-			return 2
-		}
-	default:
-		{
-			return 4
-		}
-	}
+// FileHeader returns the Wave File's header
+func (pcm *PCM) FileHeader() Header {
+	return pcm.Header
 }
 
 // AllocateDataSize sets up the PCM Data field to the size given.
 func (pcm *PCM) AllocateDataSize(size int32) {
 	pcm.DataSize = size
 	pcm.Data = make([]byte, size)
+}
+
+// Write appends the byte array to the Wave Data
+func (pcm *PCM) Write(d []byte) (int, error) {
+	dLen := int32(len(d))
+	pcm.Data = append(pcm.Data, d...)
+	pcm.Size = int32(len(pcm.Data))
+	return int(pcm.Size - dLen), nil
+}
+
+// WriteAt writes the passed in data at the given offset in the Wave Data
+func (pcm *PCM) WriteAt(p []byte, off int64) (int, error) {
+	cSize := len(pcm.Data)
+	if off > int64(cSize) {
+		return 0, errors.New("cannot write past capacity of Data")
+	}
+	pLen := len(p)
+	combinedSize := pLen + cSize
+	if combinedSize > cap(pcm.Data) {
+		tmpData := make([]byte, combinedSize, (combinedSize+1)*2)
+		copy(tmpData, pcm.Data)
+		pcm.Data = tmpData
+	}
+	i := 0
+	for ; i < len(p); i++ {
+		pcm.Data[off+int64(i)] = p[i]
+	}
+	return i, nil
 }

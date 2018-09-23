@@ -45,19 +45,15 @@ func (sess *Session) AddNotes(ns ...*notes.Note) {
 }
 
 // WriteData writes session data out to PCM wave object
-func (sess *Session) WriteData(pcm *format.PCM) {
-	size := int((sess.length / time.Second) * time.Duration(pcm.BytesPerSecond))
-	fmt.Println("data size", size, "BytesPerSecond:", pcm.Header.BytesPerSecond)
-	pcm.Data = make([]byte, size)
+func (sess *Session) WriteData(wWriter format.WaveWriter) {
+	bps := wWriter.FileHeader().BytesPerSecond
+	size := int32((sess.length / time.Second) * time.Duration(bps))
+	fmt.Println("data size", size, "BytesPerSecond:", bps)
+	wWriter.AllocateDataSize(size)
 	dur := 0
 	wg := sync.WaitGroup{}
 	for i := 0; i < len(sess.noteCollection); i++ {
-		tmp, err := pcm.AddNoteParallel(dur, sess.noteCollection[i], &wg)
-		//tmp, err := pcm.AddNote(dur, sess.noteCollection[i])
-		if err != nil {
-			fmt.Println(err)
-		}
-		dur += tmp
+		dur += addNoteParallel(dur, sess.noteCollection[i], &wg, wWriter)
 	}
 	wg.Wait()
 }
