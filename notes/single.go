@@ -71,27 +71,27 @@ func NewNoteWithOctave(vol, oct float64, len time.Duration, freq ...float64) *No
 }
 
 // AtTime grabs sin value at time t
-func (note Note) AtTime(t int) float64 {
-	return NoteAtTime(t, note)
+func (note Note) AtTime(t, sr int) float64 {
+	return NoteAtTime(t, sr, note)
 }
 
 // NoteAtTime grabs sin value at time t
-func NoteAtTime(t int, note Note) float64 {
+func NoteAtTime(t, sr int, note Note) float64 {
 	sum := 0.0
+	multiplier := (2.0 * math.Pi) / float64(sr)
 	for i := 0; i < len(note.Frequency); i++ {
-		// TODO Not sure if chords are being handled correctly
-		sum += math.Sin((2.0 * math.Pi / (note.Frequency[i] * note.Octave)) * float64(t))
+		sum += math.Sin((multiplier * (note.Frequency[i] * note.Octave)) * float64(t))
 	}
-	return sum // math.Sin(sum * float64(t))
+	return sum
 }
 
 // ToData generates a float64 value representation of the note
 // Accounts for mutliple notes by dividing the volume by the number of notes
-func (note Note) ToData(index int) float64 {
+func (note Note) ToData(index, sr int) float64 {
 	freqLen := len(note.Frequency)
 	vol := note.Volume
 	if freqLen > 1 {
 		vol = vol / float64(freqLen)
 	}
-	return vol * note.AtTime(index)
+	return vol * note.AtTime(index, sr)
 }
