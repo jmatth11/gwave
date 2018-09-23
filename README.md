@@ -18,7 +18,7 @@ This project is a WIP but some of the functionality that can be done is:
 
 ```bash
 $ go build
-$ ./wave
+$ ./gwave
 ```
 
 ## Example program
