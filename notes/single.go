@@ -36,6 +36,7 @@ const (
 type Note struct {
 	Volume    float64
 	Frequency []float64
+	Octave    float64
 	Length    time.Duration
 }
 
@@ -44,6 +45,7 @@ func SilentNote(length time.Duration) *Note {
 	return &Note{
 		Volume:    0.0,
 		Frequency: []float64{0.0},
+		Octave:    1.0,
 		Length:    length,
 	}
 }
@@ -53,6 +55,17 @@ func NewNote(vol float64, len time.Duration, freq ...float64) *Note {
 	return &Note{
 		Volume:    vol,
 		Frequency: freq,
+		Octave:    1.0,
+		Length:    len,
+	}
+}
+
+// NewNoteWithOctave generates a new note object with a specified octave from the middle note
+func NewNoteWithOctave(vol, oct float64, len time.Duration, freq ...float64) *Note {
+	return &Note{
+		Volume:    vol,
+		Frequency: freq,
+		Octave:    oct,
 		Length:    len,
 	}
 }
@@ -66,9 +79,10 @@ func (note Note) AtTime(t int) float64 {
 func NoteAtTime(t int, note Note) float64 {
 	sum := 0.0
 	for i := 0; i < len(note.Frequency); i++ {
-		sum += 2.0 * math.Pi / note.Frequency[i]
+		// TODO Not sure if chords are being handled correctly
+		sum += math.Sin((2.0 * math.Pi / (note.Frequency[i] * note.Octave)) * float64(t))
 	}
-	return math.Sin(sum * float64(t))
+	return sum // math.Sin(sum * float64(t))
 }
 
 // ToData generates a float64 value representation of the note

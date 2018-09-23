@@ -13,13 +13,15 @@ func main() {
 	pcm := format.DefaultCDPCM()
 	sess := session.NewSession()
 
-	// params: volume, duration, frequency
-	nd := notes.NewNote(17000, time.Second, notes.A)
-	nfs := notes.NewNote(17000, time.Second, notes.D)
-	ng := notes.NewNote(17000, time.Second, notes.G)
-	na := notes.NewNote(17000, time.Second, notes.C)
+	ns := make([]*notes.Note, 4)
 
-	sess.AddNotes(na, ng, nfs, nd)
+	// params: volume, duration, frequency
+	ns[0] = notes.NewNote(15000, time.Second, notes.F, notes.A, notes.B)
+	ns[1] = notes.NewNoteWithOctave(15000, 0.5, time.Second, notes.F)
+	ns[2] = notes.NewNote(15000, time.Second, notes.D, notes.A, notes.G)
+	ns[3] = notes.NewNoteWithOctave(15000, 0.5, time.Second, notes.D)
+
+	sess.AddNotes(ns...)
 	fmt.Println("Data Size: ", sess.WriteData(pcm))
 	if err := pcm.WriteToFile("testFile.wav"); err != nil {
 		panic(err)
