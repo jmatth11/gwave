@@ -9,15 +9,12 @@ import (
 	"github.com/iCurlmyster/wave/session"
 )
 
-var pcm = format.DefaultCDPCM()
-var oneSecond = int(pcm.Header.BytesPerSecond)
-var playTime = oneSecond * 4
-
 func main() {
-	pcm.AllocateDataSize(int32(playTime))
+	pcm := format.DefaultCDPCM()
 
 	sess := session.NewSession()
 
+	// params: volume, duration, frequency
 	na := notes.NewNote(5000, time.Second, notes.A)
 	ng := notes.NewNote(5000, time.Second, notes.G)
 	nfs := notes.NewNote(5000, time.Second, notes.Fs)

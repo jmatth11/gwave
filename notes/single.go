@@ -85,8 +85,8 @@ func NoteAtTime(t int, bps float64, note Note) float64 {
 	return math.Sin(sum * float64(t))
 }
 
-// ToData works for 16 bit sample note. same note for left and right side
-// Example Volume and Frequency could be 32000 and 440.0 respectively
+// ToData generates a float64 value representation of the note
+// Accounts for mutliple notes by dividing the volume by the number of notes
 func (note Note) ToData(bps int32, index int) float64 {
 	freqLen := len(note.Frequency)
 	vol := note.Volume
