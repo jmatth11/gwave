@@ -12,7 +12,7 @@ import (
 	"github.com/iCurlmyster/wave/notes"
 )
 
-// AddNote pushes the note data for the note length onto the buffer
+// addNote pushes the note data for the note length onto the buffer
 func addNote(i int, n *notes.Note, wWriter format.WaveWriter) (int, error) {
 	if n.Length < 1 {
 		return 0, errors.New("length of note is too small. must be greater than or equal to 1")
@@ -26,7 +26,7 @@ func addNote(i int, n *notes.Note, wWriter format.WaveWriter) (int, error) {
 
 // TODO Did addNoteParallel because working on small scale. Maybe should rework to handle groups of notes instead of individual notes for bigger sound samples
 
-// AddNoteParallel Adds notes to file in parallel.
+// addNoteParallel Adds notes to file in parallel.
 // Accepts a WaitGroup to increment and call Done when writing this note is complete
 func addNoteParallel(i int, n *notes.Note, wg *sync.WaitGroup, wWriter format.WaveWriter) int {
 	if n.Length < 1 {

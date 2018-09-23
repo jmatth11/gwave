@@ -11,7 +11,6 @@ import (
 
 func main() {
 	pcm := format.DefaultCDPCM()
-
 	sess := session.NewSession()
 
 	// params: volume, duration, frequency
@@ -21,12 +20,8 @@ func main() {
 	na := notes.NewNote(17000, time.Second, notes.C)
 
 	sess.AddNotes(na, ng, nfs, nd)
-	start := time.Now()
-	sess.WriteData(pcm)
-	end := time.Now()
-	fmt.Printf("time: %v\n", end.Sub(start))
-	err := pcm.WriteToFile("testFile.wav")
-	if err != nil {
+	fmt.Println("Data Size: ", sess.WriteData(pcm))
+	if err := pcm.WriteToFile("testFile.wav"); err != nil {
 		panic(err)
 	}
 	fmt.Println("Successfully written out file.")

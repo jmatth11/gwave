@@ -9,7 +9,7 @@ import (
 
 // Header is a simple layout of the format for a Wave file
 type Header struct {
-	// "RIFF"
+	// "RIFF" or "RIFX"
 	ByteType [4]byte
 	// File Size
 	Size int32
@@ -29,7 +29,7 @@ type Header struct {
 	BytesPerSecond int32
 	// NumChannels * BitsPerSample / 8. Number of bytes for one sample including all channels
 	BlockAlign int16
-	// 16 would be two 8 bytes to sample from. usually 8, 16, or 32
+	// 16 would be two 8 bytes to sample from. usually 8, 16, 24, or 32 (currently not handling 24)
 	BitsPerSample int16
 	// "data"
 	DataMarker [4]byte
@@ -51,8 +51,10 @@ var (
 	Wav = [4]byte{'W', 'A', 'V', 'E'}
 	// FmtMarker represents the fmt marker in the header
 	FmtMarker = [4]byte{'f', 'm', 't', ' '}
-	// Riff represents the Byte order type for the file in the header
+	// Riff represents the Byte order type for little endian for the wave file
 	Riff = [4]byte{'R', 'I', 'F', 'F'}
+	// Rifx represents the Byte order type for big endian for the wave file
+	Rifx = [4]byte{'R', 'I', 'F', 'X'}
 	// DataMarker represents the DATA marker in the header.
 	DataMarker = [4]byte{'d', 'a', 't', 'a'}
 	// RiffByteOrder value to compare when converting bytes

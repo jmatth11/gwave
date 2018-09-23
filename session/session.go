@@ -2,7 +2,6 @@ package session
 
 import (
 	"errors"
-	"fmt"
 	"sync"
 	"time"
 
@@ -44,11 +43,10 @@ func (sess *Session) AddNotes(ns ...*notes.Note) {
 	sess.noteCollection = append(sess.noteCollection, ns...)
 }
 
-// WriteData writes session data out to PCM wave object
-func (sess *Session) WriteData(wWriter format.WaveWriter) {
+// WriteData writes session data out to wave writer object
+func (sess *Session) WriteData(wWriter format.WaveWriter) int32 {
 	bps := wWriter.FileHeader().BytesPerSecond
 	size := int32((sess.length / time.Second) * time.Duration(bps))
-	fmt.Println("data size", size, "BytesPerSecond:", bps)
 	wWriter.AllocateDataSize(size)
 	dur := 0
 	wg := sync.WaitGroup{}
@@ -56,4 +54,5 @@ func (sess *Session) WriteData(wWriter format.WaveWriter) {
 		dur += addNoteParallel(dur, sess.noteCollection[i], &wg, wWriter)
 	}
 	wg.Wait()
+	return size
 }
