@@ -31,9 +31,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/iCurlmyster/wave/format"
-	"github.com/iCurlmyster/wave/notes"
-	"github.com/iCurlmyster/wave/session"
+	"github.com/jmatth11/wave/format"
+	"github.com/jmatth11/wave/notes"
+	"github.com/jmatth11/wave/session"
 )
 
 func main() {
